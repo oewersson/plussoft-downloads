@@ -192,7 +192,7 @@ function renderCards(cardsToRender) {
         </div>
         <div class="card-desc-row">
           <p class="card-desc">${desc || 'Aplicativo integrado.'}</p>
-          <span class="card-dots" title="Mais opções">
+          <span class="card-dots" title="mais detalhes" style="cursor: pointer;" onclick="openMoreDetails(${id})">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="5" cy="12" r="2"/>
               <circle cx="12" cy="12" r="2"/>
@@ -243,42 +243,86 @@ elements.searchInput.addEventListener("input", applyFilters);
 function createModalVersionsContainer() {
   const div = document.createElement("div");
   div.id = "modalVersions";
-  div.style.marginTop = "20px";
-  // Procura se tem conteudo no modal, e anexa
-  const modalContent = document.querySelector(".modal-content");
-  if(modalContent) modalContent.appendChild(div);
+  const modalBody = document.querySelector(".modal-body");
+  if(modalBody) modalBody.appendChild(div);
   return div;
 }
 
-async function openDetails(cardId, cardName) {
-  elements.modalTitle.innerText = cardName;
+function openMoreDetails(cardId) {
+  const card = allCards.find(c => (c.card_id || c.id) == cardId);
+  if (!card) return;
+  
+  const nome = card.card_nome || card.nome || "Sem nome";
+  const desc = card.card_descricao || card.descricao || card.detalhes || "Nenhum detalhe adicional disponível.";
+  
+  // Restaura elementos que podem ter sido escondidos pelo modal de versões
+  const iconEl = document.getElementById("modalIcon");
+  if (iconEl) iconEl.style.display = "flex";
+  elements.modalCategory.style.display = "block";
+  elements.modalDesc.style.display = "block";
+  
+  const modalHeader = document.querySelector(".modal-header");
+  if (modalHeader) modalHeader.style.marginBottom = "24px";
+  const modalBody = document.querySelector(".modal-body");
+  if (modalBody) {
+    modalBody.style.paddingTop = "24px";
+    modalBody.style.borderTop = "1px solid var(--border)";
+  }
+  
+  elements.modalTitle.innerText = "Detalhes - " + nome;
   elements.modalCategory.innerText = currentCategoryName;
-  elements.modalDesc.innerText = "Carregando histórico de versões...";
-  elements.modalVersions.innerHTML = "";
+  elements.modalDesc.innerText = desc;
+  if (elements.modalVersions) elements.modalVersions.innerHTML = "";
+  
+  elements.detailsModal.classList.add("active");
+  elements.detailsModal.style.display = "flex";
+}
+
+async function openDetails(cardId, cardName) {
+  // Esconde elementos desnecessários para o modal de versões
+  const iconEl = document.getElementById("modalIcon");
+  if (iconEl) iconEl.style.display = "none";
+  elements.modalCategory.style.display = "none";
+  elements.modalDesc.style.display = "none";
+  
+  const modalHeader = document.querySelector(".modal-header");
+  if (modalHeader) modalHeader.style.marginBottom = "15px";
+  const modalBody = document.querySelector(".modal-body");
+  if (modalBody) {
+    modalBody.style.paddingTop = "5px";
+    modalBody.style.borderTop = "1px solid #eaeaea";
+  }
+  
+  // Configura o título com o ícone de histórico
+  elements.modalTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5c6a7a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px; margin-bottom:2px; vertical-align:middle;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><span style="color:#5c6a7a; font-size:16px;">Versões Anteriores</span>`;
+  
+  elements.modalVersions.innerHTML = "<p style='text-align:center; padding: 20px; color: #888;'>Carregando histórico...</p>";
   elements.detailsModal.classList.add("active");
   elements.detailsModal.style.display = "flex";
   
   try {
-    const res = await fetch(`${API_BASE}/site/versoes_cards/listar`);
+    const res = await fetch(`${API_BASE}/site/versoes_cards/listar?id_cards=${cardId}`);
     const versoes = await res.json();
-    const versoesList = Array.isArray(versoes) ? versoes : (versoes.value || versoes.data || []);
-    
-    // Filtrar as versões desse card (assumindo que retorna id_cards ou similar)
-    const cardVersions = versoesList.filter(v => v.id_cards == cardId || v.card_id == cardId);
+    const cardVersions = Array.isArray(versoes) ? versoes : (versoes.value || versoes.data || []);
     
     if (cardVersions.length === 0) {
-      elements.modalDesc.innerText = "Nenhuma versão encontrada para este item.";
+      elements.modalVersions.innerHTML = "<p style='text-align:center; padding: 20px; color: #888;'>Nenhuma versão encontrada para este item.</p>";
     } else {
-      elements.modalDesc.innerText = "Histórico de Versões:";
-      let html = '<ul style="list-style:none; padding:0; margin-top:10px; border-top:1px solid #ddd;">';
+      let html = '<ul style="list-style:none; padding:0; margin: 10px 0 0 0;">';
       cardVersions.forEach(v => {
         const dataStr = formatDateTime(v.datetime || v.versao_datetime);
+        const versaoLabel = v.versao.toLowerCase().startsWith('v') ? v.versao : 'v' + v.versao;
         html += `
-          <li style="padding: 10px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <strong>${v.versao}</strong> <span style="color:#666; font-size: 0.9em; margin-left: 10px;">${dataStr}</span>
+          <li style="padding: 16px 10px; border-bottom: 1px solid #eaeaea; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 19px; font-weight: 800; color: #0b1527; width: 80px;">
+              ${versaoLabel}
             </div>
-            ${v.link ? `<a href="${v.link}" target="_blank" class="btn btn-primary btn-sm">Baixar</a>` : ''}
+            <div style="color: #6a6a6a; font-size: 16px; flex: 1; text-align: center;">
+              ${dataStr}
+            </div>
+            <a href="${v.versao_link || v.link || '#'}" target="_blank" style="color: #00a8e8; display: flex; align-items: center; justify-content: center;" title="Baixar">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>
+            </a>
           </li>
         `;
       });
@@ -287,7 +331,7 @@ async function openDetails(cardId, cardName) {
     }
   } catch(err) {
     console.error("Erro ao carregar versões", err);
-    elements.modalDesc.innerText = "Erro ao carregar o histórico de versões.";
+    elements.modalVersions.innerHTML = "<p style='text-align:center; padding: 20px; color: red;'>Erro ao carregar o histórico de versões.</p>";
   }
 }
 
