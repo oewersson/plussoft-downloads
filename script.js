@@ -37,11 +37,11 @@ async function fetchCategories() {
     const res = await fetch(`${API_BASE}/site/categoria/listar`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
-    
+
     // Se a API retornar { data: [...] } ou algo similar, precisamos extrair o array.
     // Assumimos aqui que ou retorna o array direto, ou num campo padrão 'data'.
     allCategories = Array.isArray(data) ? data : (data.data || data.categorias || []);
-    
+
     console.log("Categorias recebidas:", allCategories);
     renderCategories();
   } catch (err) {
@@ -73,17 +73,17 @@ async function fetchCardsByCategory(id) {
 
 function renderCategories() {
   elements.menu.innerHTML = "";
-  
+
   if (!allCategories || allCategories.length === 0) {
     elements.menu.innerHTML = `<div style="padding:15px;color:#666;font-size:12px;">Nenhuma categoria encontrada no JSON.</div>`;
     return;
   }
-  
+
   allCategories.forEach(cat => {
     // Tenta pegar o nome da categoria pelos campos mais comuns baseados na sua Query SQL
     const id = cat.categoria_id || cat.id || cat.ID;
     const nome = cat.categoria_nome || cat.nome || cat.NOME || "Sem Nome";
-    
+
     const btn = document.createElement("button");
     btn.className = "menu-item";
     btn.dataset.id = id;
@@ -108,13 +108,13 @@ async function selectCategory(id, name) {
   currentCategoryId = id;
   currentCategoryName = name;
   elements.sectionTitle.textContent = name;
-  
+
   // Atualiza active class
   document.querySelectorAll(".menu-item").forEach(btn => {
     if (btn.dataset.id == id) btn.classList.add("active");
     else btn.classList.remove("active");
   });
-  
+
   elements.searchInput.value = "";
   await fetchCardsByCategory(id);
 }
@@ -144,7 +144,7 @@ function formatDateTime(dateVal) {
 
 function renderCards(cardsToRender) {
   elements.grid.innerHTML = "";
-  
+
   if (cardsToRender.length === 0) {
     elements.emptyState.style.display = "block";
   } else {
@@ -155,17 +155,17 @@ function renderCards(cardsToRender) {
 
       const article = document.createElement("article");
       article.className = "card h-100";
-      
+
       const versaoAtual = card.versao || "N/A";
       const dataStr = formatDateTime(card.versao_datetime || card.datetime);
-      
+
       const rawLogo = card.card_logo || card.imagem || card.logo;
       const isValidImage = typeof rawLogo === "string" && (
-        rawLogo.startsWith("http://") || 
-        rawLogo.startsWith("https://") || 
-        rawLogo.startsWith("data:image/") || 
-        rawLogo.startsWith("/") || 
-        rawLogo.startsWith("./") || 
+        rawLogo.startsWith("http://") ||
+        rawLogo.startsWith("https://") ||
+        rawLogo.startsWith("data:image/") ||
+        rawLogo.startsWith("/") ||
+        rawLogo.startsWith("./") ||
         /\.(png|jpg|jpeg|svg|webp|ico)$/i.test(rawLogo)
       );
       const imgSrc = isValidImage ? rawLogo : "https://plussoft.com.br/img/program-default-logo.svg";
@@ -176,7 +176,7 @@ function renderCards(cardsToRender) {
         link = "https://" + link;
       }
       const id = card.card_id || card.id;
-      
+
       article.innerHTML = `
         <div class="card-header">
           <div class="card-header-left">
@@ -192,13 +192,7 @@ function renderCards(cardsToRender) {
         </div>
         <div class="card-desc-row">
           <p class="card-desc">${desc || 'Aplicativo integrado.'}</p>
-          <span class="card-dots" title="mais detalhes" style="cursor: pointer;" onclick="openMoreDetails(${id})">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="5" cy="12" r="2"/>
-              <circle cx="12" cy="12" r="2"/>
-              <circle cx="19" cy="12" r="2"/>
-            </svg>
-          </span>
+          <span class="card-dots" title="mais detalhes" style="cursor: pointer; display: none;" onclick="openMoreDetails(${id})">...</span>
         </div>
         <div class="card-divider"></div>
         <div class="card-actions">
@@ -218,22 +212,37 @@ function renderCards(cardsToRender) {
       col.appendChild(article);
       elements.grid.appendChild(col);
     });
+
+    // Verifica após a renderização se o texto passa de 3 linhas (se tem overflow)
+    setTimeout(() => {
+      document.querySelectorAll('.card-desc').forEach(p => {
+        const dots = p.nextElementSibling;
+        if (dots && dots.classList.contains('card-dots')) {
+          // scrollHeight maior que clientHeight indica que o texto foi truncado pelo line-clamp
+          if (p.scrollHeight > p.clientHeight) {
+            dots.style.display = 'inline-flex';
+          } else {
+            dots.style.display = 'none';
+          }
+        }
+      });
+    }, 0);
   }
   elements.summaryCount.textContent = cardsToRender.length;
 }
 
 function applyFilters() {
   const term = elements.searchInput.value.trim().toLowerCase();
-  
+
   let filtered = allCards;
-  
+
   if (term) {
     filtered = filtered.filter(c => {
       const nome = c.card_nome || c.nome || "";
       return nome.toLowerCase().includes(term);
     });
   }
-  
+
   renderCards(filtered);
 }
 
@@ -244,35 +253,35 @@ function createModalVersionsContainer() {
   const div = document.createElement("div");
   div.id = "modalVersions";
   const modalBody = document.querySelector(".modal-body");
-  if(modalBody) modalBody.appendChild(div);
+  if (modalBody) modalBody.appendChild(div);
   return div;
 }
 
 function openMoreDetails(cardId) {
   const card = allCards.find(c => (c.card_id || c.id) == cardId);
   if (!card) return;
-  
-  const nome = card.card_nome || card.nome || "Sem nome";
+
   const desc = card.card_descricao || card.descricao || card.detalhes || "Nenhum detalhe adicional disponível.";
-  
-  // Restaura elementos que podem ter sido escondidos pelo modal de versões
+
+  // Esconde elementos desnecessários conforme o novo layout
   const iconEl = document.getElementById("modalIcon");
-  if (iconEl) iconEl.style.display = "flex";
-  elements.modalCategory.style.display = "block";
-  elements.modalDesc.style.display = "block";
+  if (iconEl) iconEl.style.display = "none";
+  elements.modalCategory.style.display = "none";
   
+  // Exibe a descrição
+  elements.modalDesc.style.display = "block";
+
   const modalHeader = document.querySelector(".modal-header");
-  if (modalHeader) modalHeader.style.marginBottom = "24px";
+  if (modalHeader) modalHeader.style.marginBottom = "15px";
   const modalBody = document.querySelector(".modal-body");
   if (modalBody) {
-    modalBody.style.paddingTop = "24px";
-    modalBody.style.borderTop = "1px solid var(--border)";
+    modalBody.style.paddingTop = "15px";
+    modalBody.style.borderTop = "1px solid #eaeaea";
   }
-  
-  elements.modalTitle.innerText = "Detalhes - " + nome;
-  elements.modalCategory.innerText = currentCategoryName;
+
+  elements.modalTitle.innerText = "Descrição Completa";
   elements.modalDesc.innerText = desc;
-  if (elements.modalVersions) elements.modalVersions.innerHTML = "";
+  elements.modalVersions.innerHTML = "";
   
   elements.detailsModal.classList.add("active");
   elements.detailsModal.style.display = "flex";
@@ -284,7 +293,7 @@ async function openDetails(cardId, cardName) {
   if (iconEl) iconEl.style.display = "none";
   elements.modalCategory.style.display = "none";
   elements.modalDesc.style.display = "none";
-  
+
   const modalHeader = document.querySelector(".modal-header");
   if (modalHeader) modalHeader.style.marginBottom = "15px";
   const modalBody = document.querySelector(".modal-body");
@@ -292,26 +301,30 @@ async function openDetails(cardId, cardName) {
     modalBody.style.paddingTop = "5px";
     modalBody.style.borderTop = "1px solid #eaeaea";
   }
-  
+
   // Configura o título com o ícone de histórico
   elements.modalTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5c6a7a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px; margin-bottom:2px; vertical-align:middle;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><span style="color:#5c6a7a; font-size:16px;">Versões Anteriores</span>`;
-  
+
   elements.modalVersions.innerHTML = "<p style='text-align:center; padding: 20px; color: #888;'>Carregando histórico...</p>";
   elements.detailsModal.classList.add("active");
   elements.detailsModal.style.display = "flex";
-  
+
   try {
     const res = await fetch(`${API_BASE}/site/versoes_cards/listar?id_cards=${cardId}`);
     const versoes = await res.json();
     const cardVersions = Array.isArray(versoes) ? versoes : (versoes.value || versoes.data || []);
-    
+
     if (cardVersions.length === 0) {
       elements.modalVersions.innerHTML = "<p style='text-align:center; padding: 20px; color: #888;'>Nenhuma versão encontrada para este item.</p>";
     } else {
       let html = '<ul style="list-style:none; padding:0; margin: 10px 0 0 0;">';
       cardVersions.forEach(v => {
         const dataStr = formatDateTime(v.datetime || v.versao_datetime);
-        const versaoLabel = v.versao.toLowerCase().startsWith('v') ? v.versao : 'v' + v.versao;
+        let versaoLabel = v.versao;
+        if (versaoLabel.toLowerCase().startsWith('v')) {
+          versaoLabel = versaoLabel.substring(1);
+        }
+
         html += `
           <li style="padding: 16px 10px; border-bottom: 1px solid #eaeaea; display: flex; justify-content: space-between; align-items: center;">
             <div style="font-size: 19px; font-weight: 800; color: #0b1527; width: 80px;">
@@ -320,7 +333,7 @@ async function openDetails(cardId, cardName) {
             <div style="color: #6a6a6a; font-size: 16px; flex: 1; text-align: center;">
               ${dataStr}
             </div>
-            <a href="${v.versao_link || v.link || '#'}" target="_blank" style="color: #00a8e8; display: flex; align-items: center; justify-content: center;" title="Baixar">
+            <a href="${v.card_link || v.link || '#'}" target="_blank" style="color: #00a8e8; display: flex; align-items: center; justify-content: center;" title="Baixar">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>
             </a>
           </li>
@@ -329,7 +342,7 @@ async function openDetails(cardId, cardName) {
       html += '</ul>';
       elements.modalVersions.innerHTML = html;
     }
-  } catch(err) {
+  } catch (err) {
     console.error("Erro ao carregar versões", err);
     elements.modalVersions.innerHTML = "<p style='text-align:center; padding: 20px; color: red;'>Erro ao carregar o histórico de versões.</p>";
   }
@@ -358,4 +371,5 @@ function toggleSidebar() {
 
 
 // Inicializar
-init();
+init();
+

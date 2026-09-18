@@ -500,10 +500,7 @@ a:hover {
 }
 
 .card-desc-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  position: relative;
   margin: 20px 0 16px 0;
 }
 
@@ -512,27 +509,32 @@ a:hover {
   color: #475569;
   font-size: 14px;
   line-height: 1.4;
-  flex: 1;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .card-dots {
-  color: #475569;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  color: #124bb7;
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.4;
   cursor: pointer;
-  flex-shrink: 0;
-  opacity: 0.8;
-  transition: opacity 0.2s;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: #ffffff;
+  padding-left: 6px;
+  box-shadow: -15px 0 15px 5px #ffffff;
 }
 .card-dots:hover {
-  opacity: 1;
-  color: #0f172a;
+  color: #0e3b91;
+  text-decoration: underline;
 }
 
 .card-divider {
@@ -748,5 +750,13 @@ a:hover {
   padding: 24px 0 0 0;
   max-height: 50vh;
   overflow-y: auto;
+  overflow-x: hidden;
 }
-.modal-desc { font-size: 14px; line-height: 1.6; color: #475569; }
+.modal-desc { 
+  font-size: 14px; 
+  line-height: 1.6; 
+  color: #475569; 
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
