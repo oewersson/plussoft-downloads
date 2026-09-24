@@ -1,4 +1,16 @@
-const API_BASE = "http://192.168.5.206:7008";
+const API_BASE = "https://vps.plussoft.com.br:7008";
+
+// Popula a tag de versão visual do site lendo o próprio script
+const scriptTag = document.querySelector('script[src^="script.js"]');
+if (scriptTag) {
+  const match = scriptTag.src.match(/\?v=(.*)/);
+  if (match) {
+    const appVersion = match[1];
+    document.querySelectorAll('.site-version-tag').forEach(tag => {
+      tag.textContent = `v${appVersion}`;
+    });
+  }
+}
 
 const elements = {
   menu: document.querySelector(".menu"),
@@ -54,7 +66,7 @@ async function fetchCardsByCategory(id) {
   elements.grid.innerHTML = "<p style='padding:20px; color:#666;'>Carregando...</p>";
   elements.emptyState.style.display = "none";
   try {
-    const res = await fetch(`${API_BASE}/site/cards/listar?id=${id}`);
+    const res = await fetch(`${API_BASE}/site/cards/listar?id_categoria=${id}`);
     if (res.status === 404) {
       allCards = [];
       applyFilters();
@@ -267,7 +279,7 @@ function openMoreDetails(cardId) {
   const iconEl = document.getElementById("modalIcon");
   if (iconEl) iconEl.style.display = "none";
   elements.modalCategory.style.display = "none";
-  
+
   // Exibe a descrição
   elements.modalDesc.style.display = "block";
 
@@ -282,7 +294,7 @@ function openMoreDetails(cardId) {
   elements.modalTitle.innerText = "Descrição Completa";
   elements.modalDesc.innerText = desc;
   elements.modalVersions.innerHTML = "";
-  
+
   elements.detailsModal.classList.add("active");
   elements.detailsModal.style.display = "flex";
 }
@@ -369,7 +381,5 @@ function toggleSidebar() {
 }
 
 
-
 // Inicializar
 init();
-
