@@ -33,6 +33,7 @@ let allCategories = [];
 let allCards = [];
 let currentCategoryId = null;
 let currentCategoryName = "";
+let currentCategoryObj = null;
 
 async function init() {
   await fetchCategories();
@@ -40,7 +41,7 @@ async function init() {
     const firstCat = allCategories[0];
     const id = firstCat.categoria_id || firstCat.id || firstCat.ID;
     const nome = firstCat.categoria_nome || firstCat.nome || firstCat.NOME || "Sem Nome";
-    selectCategory(id, nome);
+    selectCategory(id, nome, firstCat);
   }
 }
 
@@ -104,7 +105,7 @@ function renderCategories() {
       <span class="menu-chevron">›</span>
     `;
     btn.addEventListener("click", () => {
-      selectCategory(id, nome);
+      selectCategory(id, nome, cat);
       if (window.innerWidth <= 768) {
         const sidebar = document.getElementById("sidebar");
         const backdrop = document.getElementById("sidebarBackdrop");
@@ -116,9 +117,10 @@ function renderCategories() {
   });
 }
 
-async function selectCategory(id, name) {
+async function selectCategory(id, name, catObj = null) {
   currentCategoryId = id;
   currentCategoryName = name;
+  currentCategoryObj = catObj;
   elements.sectionTitle.textContent = name;
 
   // Atualiza active class
@@ -189,38 +191,75 @@ function renderCards(cardsToRender) {
       }
       const id = card.card_id || card.id;
 
-      article.innerHTML = `
-        <div class="card-header">
-          <div class="card-header-left">
-            <div class="app-icon-wrapper">
-              <img src="${imgSrc}" class="app-icon-img" alt="Logo ${nome}" />
+      let isLinkLayout = currentCategoryName.toLowerCase() === 'links';
+      
+      // Verifica o campo "site" ou "tipo_categoria" que pode vir na categoria ou no próprio card
+      if (currentCategoryObj && (currentCategoryObj.site == 1 || currentCategoryObj.tipo_categoria == 1)) {
+        isLinkLayout = true;
+      }
+      if (card.site == 1 || card.tipo_categoria == 1) {
+        isLinkLayout = true;
+      }
+
+      if (isLinkLayout) {
+        article.innerHTML = `
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="app-icon-wrapper">
+                <img src="${imgSrc}" class="app-icon-img" alt="Logo ${nome}" />
+              </div>
+              <h3 class="app-title">${nome}</h3>
             </div>
-            <h3 class="app-title">${nome}</h3>
+            <div class="card-header-meta">
+              <span class="updated-time" style="font-size: 16px;">-</span>
+            </div>
           </div>
-          <div class="card-header-meta">
-            <span class="version-highlight">Versão ${versaoAtual}</span>
-            <span class="updated-time">${dataStr}</span>
+          <div class="card-desc-row">
+            <p class="card-desc">${desc || 'Link integrado.'}</p>
+            <span class="card-dots" title="mais detalhes" style="cursor: pointer; display: none;" onclick="openMoreDetails(${id})">...</span>
           </div>
-        </div>
-        <div class="card-desc-row">
-          <p class="card-desc">${desc || 'Aplicativo integrado.'}</p>
-          <span class="card-dots" title="mais detalhes" style="cursor: pointer; display: none;" onclick="openMoreDetails(${id})">...</span>
-        </div>
-        <div class="card-divider"></div>
-        <div class="card-actions">
-          <a href="${link}" target="_blank" class="btn btn-primary btn-round">
-            Versão Atual
-          </a>
-          <button type="button" class="btn btn-secondary btn-round" onclick="openDetails(${id}, '${nome}')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="M3 3v5h5"/>
-              <path d="M12 7v5l3 2"/>
-            </svg>
-            Versões Anteriores
-          </button>
-        </div>
-      `;
+          <div class="card-divider"></div>
+          <div class="card-actions" style="display: flex; justify-content: center;">
+            <a href="${link}" target="_blank" class="btn btn-primary btn-round" style="width: 200px; max-width: 100%;">
+              Acessar
+            </a>
+          </div>
+        `;
+      } else {
+        article.innerHTML = `
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="app-icon-wrapper">
+                <img src="${imgSrc}" class="app-icon-img" alt="Logo ${nome}" />
+              </div>
+              <h3 class="app-title">${nome}</h3>
+            </div>
+            <div class="card-header-meta">
+              <span class="version-highlight">Versão ${versaoAtual}</span>
+              <span class="updated-time">${dataStr}</span>
+            </div>
+          </div>
+          <div class="card-desc-row">
+            <p class="card-desc">${desc || 'Aplicativo integrado.'}</p>
+            <span class="card-dots" title="mais detalhes" style="cursor: pointer; display: none;" onclick="openMoreDetails(${id})">...</span>
+          </div>
+          <div class="card-divider"></div>
+          <div class="card-actions">
+            <a href="${link}" target="_blank" class="btn btn-primary btn-round">
+              Versão Atual
+            </a>
+            <button type="button" class="btn btn-secondary btn-round" onclick="openDetails(${id}, '${nome}')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M12 7v5l3 2"/>
+              </svg>
+              Versões Anteriores
+            </button>
+          </div>
+        `;
+      }
+
       col.appendChild(article);
       elements.grid.appendChild(col);
     });
