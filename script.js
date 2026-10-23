@@ -1,6 +1,5 @@
 const API_BASE = "https://vps.plussoft.com.br:7008";
 
-// Popula a tag de versão visual do site lendo o próprio script
 const scriptTag = document.querySelector('script[src^="script.js"]');
 if (scriptTag) {
   const match = scriptTag.src.match(/\?v=(.*)/);
