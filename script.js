@@ -155,6 +155,13 @@ function formatDateTime(dateVal) {
   }
 }
 
+const ICONS = {
+  info: `<svg class="info-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#1257e6"/><path d="M12 11v6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="7.3" r="1.5" fill="#fff"/></svg>`,
+  refresh: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>`,
+  history: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>`,
+  external: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>`
+};
+
 function renderCards(cardsToRender) {
   elements.grid.innerHTML = "";
 
@@ -200,26 +207,29 @@ function renderCards(cardsToRender) {
         isLinkLayout = true;
       }
 
+      const headerLeft = `
+            <div class="card-header-left">
+              <div class="card-header-top">
+                <div class="app-icon-wrapper">
+                  <img src="${imgSrc}" class="app-icon-img" alt="Logo ${nome}" />
+                </div>
+                <h3 class="app-title" title="${nome}">${nome}</h3>
+              </div>
+            </div>`;
+
+      const descRow = (fallback) => `
+          <div class="card-desc-row">
+            <p class="card-desc">${desc || fallback}</p>
+            <span class="card-dots" title="Mais detalhes" role="button" style="display: none;" onclick="openMoreDetails(${id})"><i></i><i></i><i></i></span>
+          </div>`;
+
       if (isLinkLayout) {
         article.innerHTML = `
-          <div class="card-header">
-            <div class="card-header-left">
-              <div class="app-icon-wrapper">
-                <img src="${imgSrc}" class="app-icon-img" alt="Logo ${nome}" />
-              </div>
-              <h3 class="app-title">${nome}</h3>
-            </div>
-            <div class="card-header-meta">
-              <span class="updated-time" style="font-size: 16px;">-</span>
-            </div>
-          </div>
-          <div class="card-desc-row">
-            <p class="card-desc">${desc || 'Link integrado.'}</p>
-            <span class="card-dots" title="mais detalhes" style="cursor: pointer; display: none;" onclick="openMoreDetails(${id})">...</span>
-          </div>
-          <div class="card-divider"></div>
-          <div class="card-actions" style="display: flex; justify-content: center;">
-            <a href="${link}" target="_blank" class="btn btn-primary btn-round" style="width: 200px; max-width: 100%;">
+          <div class="card-header">${headerLeft}</div>
+          ${descRow('Link integrado.')}
+          <div class="card-actions single">
+            <a href="${link}" target="_blank" class="btn btn-primary btn-round">
+              ${ICONS.external}
               Acessar
             </a>
           </div>
@@ -227,32 +237,20 @@ function renderCards(cardsToRender) {
       } else {
         article.innerHTML = `
           <div class="card-header">
-            <div class="card-header-left">
-              <div class="app-icon-wrapper">
-                <img src="${imgSrc}" class="app-icon-img" alt="Logo ${nome}" />
-              </div>
-              <h3 class="app-title">${nome}</h3>
-            </div>
+            ${headerLeft}
             <div class="card-header-meta">
-              <span class="version-highlight">Versão ${versaoAtual}</span>
-              <span class="updated-time">${dataStr}</span>
+              <span class="version-highlight">${ICONS.info}V ${versaoAtual}</span>
+              ${dataStr !== "-" ? `<span class="updated-time">${dataStr}</span>` : ""}
             </div>
           </div>
-          <div class="card-desc-row">
-            <p class="card-desc">${desc || 'Aplicativo integrado.'}</p>
-            <span class="card-dots" title="mais detalhes" style="cursor: pointer; display: none;" onclick="openMoreDetails(${id})">...</span>
-          </div>
-          <div class="card-divider"></div>
+          ${descRow('Aplicativo integrado.')}
           <div class="card-actions">
             <a href="${link}" target="_blank" class="btn btn-primary btn-round">
+              ${ICONS.refresh}
               Versão Atual
             </a>
             <button type="button" class="btn btn-secondary btn-round" onclick="openDetails(${id}, '${nome}')">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                <path d="M3 3v5h5"/>
-                <path d="M12 7v5l3 2"/>
-              </svg>
+              ${ICONS.history}
               Versões Anteriores
             </button>
           </div>
@@ -263,23 +261,30 @@ function renderCards(cardsToRender) {
       elements.grid.appendChild(col);
     });
 
-    // Verifica após a renderização se o texto passa de 3 linhas (se tem overflow)
-    setTimeout(() => {
-      document.querySelectorAll('.card-desc').forEach(p => {
-        const dots = p.nextElementSibling;
-        if (dots && dots.classList.contains('card-dots')) {
-          // scrollHeight maior que clientHeight indica que o texto foi truncado pelo line-clamp
-          if (p.scrollHeight > p.clientHeight) {
-            dots.style.display = 'inline-flex';
-          } else {
-            dots.style.display = 'none';
-          }
-        }
-      });
-    }, 0);
+    // Aguarda as fontes carregarem para medir as linhas corretamente
+    const ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    ready.then(() => updateCardDots());
   }
   elements.summaryCount.textContent = cardsToRender.length;
 }
+
+// Mostra os "•••" apenas quando a descrição passa de 3 linhas
+function updateCardDots() {
+  elements.grid.querySelectorAll(".card").forEach(card => {
+    const p = card.querySelector(".card-desc");
+    const dots = card.querySelector(".card-dots");
+    if (!p || !dots) return;
+    dots.style.display = "none";
+    // scrollHeight maior que clientHeight indica que o texto foi truncado pelo line-clamp
+    if (p.scrollHeight > p.clientHeight + 1) dots.style.display = "inline-flex";
+  });
+}
+
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(updateCardDots, 150);
+});
 
 function applyFilters() {
   const term = elements.searchInput.value.trim().toLowerCase();
@@ -353,7 +358,7 @@ async function openDetails(cardId, cardName) {
   }
 
   // Configura o título com o ícone de histórico
-  elements.modalTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5c6a7a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px; margin-bottom:2px; vertical-align:middle;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><span style="color:#5c6a7a; font-size:16px;">Versões Anteriores</span>`;
+  elements.modalTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5c6a7a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px; margin-bottom:2px; vertical-align:middle;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><span style="color:#5c6a7a; font-size:15px;">Versões Anteriores</span>`;
 
   elements.modalVersions.innerHTML = "<p style='text-align:center; padding: 20px; color: #888;'>Carregando histórico...</p>";
   elements.detailsModal.classList.add("active");
@@ -377,13 +382,13 @@ async function openDetails(cardId, cardName) {
 
         html += `
           <li style="padding: 16px 10px; border-bottom: 1px solid #eaeaea; display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 19px; font-weight: 800; color: #0b1527; width: 80px;">
+            <div style="font-size: 15px; font-weight: 600; color: #0b1a3a; width: 80px;">
               ${versaoLabel}
             </div>
-            <div style="color: #6a6a6a; font-size: 16px; flex: 1; text-align: center;">
+            <div style="color: #6a6a6a; font-size: 13px; flex: 1; text-align: center;">
               ${dataStr}
             </div>
-            <a href="${v.card_link || v.link || '#'}" target="_blank" style="color: #00a8e8; display: flex; align-items: center; justify-content: center;" title="Baixar">
+            <a href="${v.card_link || v.link || '#'}" target="_blank" style="color: #1257e6; display: flex; align-items: center; justify-content: center;" title="Baixar">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>
             </a>
           </li>
